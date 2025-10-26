@@ -133,15 +133,22 @@ const initializeApp = async () => {
   await projectStore.loadProjects()
   
   setTimeout(async () => {
-    if (projectStore.workspacePath) {
+    // 如果没有工作区，自动设置为数据目录
+    if (!projectStore.workspacePath) {
+      const dataDir = await window.electronAPI.getDataDirectory()
+      if (dataDir) {
+        await projectStore.setWorkspace(dataDir)
+      } else {
+        showWorkspaceDialog.value = true
+      }
+    } else {
+      // 检查工作区是否存在
       const exists = await window.electronAPI.checkPathExists(projectStore.workspacePath)
       if (!exists) {
         await projectStore.setWorkspace('')
         ElMessage.warning('工作区文件夹已被移动或删除，请重新选择')
         showWorkspaceDialog.value = true
       }
-    } else {
-      showWorkspaceDialog.value = true
     }
   }, 100)
 }

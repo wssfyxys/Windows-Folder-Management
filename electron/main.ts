@@ -62,7 +62,7 @@ function getDesktopPath(): string {
 }
 
 function getAppFolder(): string {
-  return join(getDesktopPath(), '项目管理系统数据')
+  return join(getDesktopPath(), '项目管理系统')
 }
 
 async function initAppFolder(): Promise<string> {
