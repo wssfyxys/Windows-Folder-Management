@@ -17,16 +17,19 @@
         "arch": ["x64"]
       }
     ],
-    "icon": "build/icon.ico"
+    "sign": null,
+    "signAndEditExecutable": false
   },
   "nsis": {
     "oneClick": false,
     "allowToChangeInstallationDirectory": true,
-    "perMachine": false,
+    "allowElevation": true,
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
     "shortcutName": "企业项目管理系统",
-    "installerLanguages": ["zh_CN"],
+    "deleteAppDataOnUninstall": false,
+    "runAfterFinish": true,
+    "perMachine": false,
     "language": "2052"
   },
   "mac": {

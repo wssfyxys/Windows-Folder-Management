@@ -72,6 +72,25 @@ async function initAppFolder(): Promise<string> {
   } catch {
     await fs.mkdir(appFolder, { recursive: true })
   }
+  
+  // 如果数据目录未设置，自动设置为默认应用文件夹
+  if (!getDataDirectory()) {
+    console.log('[Electron] Auto-initializing data directory:', appFolder)
+    try {
+      await fs.mkdir(join(appFolder, 'attachments'), { recursive: true })
+      const projectsPath = join(appFolder, PROJECTS_FILE)
+      try {
+        await fs.access(projectsPath)
+      } catch {
+        await fs.writeFile(projectsPath, JSON.stringify([], null, 2))
+      }
+      setDataDirectory(appFolder)
+      console.log('[Electron] Data directory initialized successfully')
+    } catch (error) {
+      console.error('[Electron] Failed to initialize data directory:', error)
+    }
+  }
+  
   return appFolder
 }
 
@@ -106,6 +125,15 @@ function createWindow() {
 app.whenReady().then(async () => {
   await initAppFolder()
   await migrateOldData()
+  
+  // 输出配置信息
+  console.log('==========================================')
+  console.log('[Electron] Application started')
+  console.log('[Electron] Config store path:', configStore.path)
+  console.log('[Electron] Data directory:', getDataDirectory() || 'NOT SET')
+  console.log('[Electron] Workspace path:', getWorkspacePath() || 'NOT SET')
+  console.log('==========================================')
+  
   createWindow()
 
   app.on('activate', () => {
@@ -212,16 +240,21 @@ ipcMain.handle('get-projects', async () => {
   try {
     const dataDir = getDataDirectory()
     if (!dataDir) {
+      console.error('[Electron] Data directory not set, cannot load projects')
       return []
     }
     
     const projectsPath = join(dataDir, PROJECTS_FILE)
+    console.log('[Electron] Loading projects from:', projectsPath)
     
     try {
       const data = await fs.readFile(projectsPath, 'utf-8')
-      return JSON.parse(data)
+      const projects = JSON.parse(data)
+      console.log('[Electron] Loaded', projects.length, 'projects')
+      return projects
     } catch (error: any) {
       if (error.code === 'ENOENT') {
+        console.log('[Electron] Projects file not found, creating new one')
         await fs.writeFile(projectsPath, JSON.stringify([], null, 2))
         return []
       }
@@ -237,14 +270,17 @@ ipcMain.handle('save-projects', async (_, projects) => {
   try {
     const dataDir = getDataDirectory()
     if (!dataDir) {
-      console.error('[Electron] Data directory not set')
+      console.error('[Electron] Data directory not set, cannot save projects')
       return false
     }
     
     const projectsPath = join(dataDir, PROJECTS_FILE)
+    console.log('[Electron] Saving', projects.length, 'projects to:', projectsPath)
+    
     const dataStr = JSON.stringify(projects, null, 2)
     await fs.writeFile(projectsPath, dataStr, 'utf-8')
     
+    console.log('[Electron] Projects saved successfully')
     return true
   } catch (error) {
     console.error('[Electron] Failed to save projects:', error)
